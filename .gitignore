@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js build output
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# secrets / environment — NEVER commit these
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+dev.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# os / editor noise
+.DS_Store
+Thumbs.db
+*.pem
