@@ -15,7 +15,7 @@ import "@xyflow/react/dist/style.css";
 
 import ValueNodeView, { ValueNodeData } from "./ValueNode";
 import InsightPanel from "./InsightPanel";
-import { evaluate } from "@/lib/calc";
+import { evaluate, reorderSiblingsByX } from "@/lib/calc";
 import { autoLayout } from "@/lib/layout";
 import { Insight } from "@/lib/insight";
 import { NodeKind, Operator, ValueNode, ValueTree } from "@/lib/types";
@@ -136,20 +136,25 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
   // ---- React Flow node/edge derivation -------------------------------------
   const rfNodes: Node[] = useMemo(
     () =>
-      Object.values(tree.nodes).map((nd) => ({
-        id: nd.id,
-        type: "valueNode",
-        position: nd.position,
-        selected: nd.id === selectedId,
-        data: {
-          node: nd,
-          computed: ev.values[nd.id] ?? null,
-          issues: ev.issues[nd.id] ?? [],
-          onValueChange,
-          onAddChild,
-          onDelete,
-        } satisfies ValueNodeData,
-      })),
+      Object.values(tree.nodes).map((nd) => {
+        const parent = nd.parentId ? tree.nodes[nd.parentId] : null;
+        const orderSensitive = !!parent && (parent.operator === "SUBTRACT" || parent.operator === "DIVIDE");
+        return {
+          id: nd.id,
+          type: "valueNode",
+          position: nd.position,
+          selected: nd.id === selectedId,
+          data: {
+            node: nd,
+            computed: ev.values[nd.id] ?? null,
+            issues: ev.issues[nd.id] ?? [],
+            operandIndex: orderSensitive ? nd.order : null,
+            onValueChange,
+            onAddChild,
+            onDelete,
+          } satisfies ValueNodeData,
+        };
+      }),
     [tree, ev, selectedId, onValueChange, onAddChild, onDelete],
   );
 
@@ -175,6 +180,17 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
         if (nodes[c.id] && c.position) nodes[c.id] = { ...nodes[c.id], position: c.position };
       }
       return { ...t, nodes };
+    });
+  }, []);
+
+  // After a drag ends, re-derive sibling `order` from left-to-right x position.
+  // This makes visual order = operand order for SUBTRACT/DIVIDE (e.g. drag the
+  // minuend to the left so it becomes the first operand).
+  const reorderOnDrag = useCallback((nodeId: string) => {
+    setTree((t) => {
+      const node = t.nodes[nodeId];
+      if (!node || !node.parentId) return t; // root has no siblings to order
+      return reorderSiblingsByX(t, node.parentId);
     });
   }, []);
 
@@ -244,6 +260,7 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
           edges={rfEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
+          onNodeDragStop={(_, node) => reorderOnDrag(node.id)}
           onInit={setRf}
           onNodeClick={(_, node) => setSelectedId(node.id)}
           onPaneClick={() => setSelectedId(null)}

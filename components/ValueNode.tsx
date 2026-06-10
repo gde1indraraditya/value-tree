@@ -7,6 +7,8 @@ export interface ValueNodeData {
   node: VNode;
   computed: number | null;
   issues: string[];
+  /** Operand position (0-based) when the PARENT is order-sensitive (SUBTRACT/DIVIDE); else null. */
+  operandIndex: number | null;
   onValueChange: (id: string, value: number | null) => void;
   onAddChild: (id: string) => void;
   onDelete: (id: string) => void;
@@ -40,7 +42,12 @@ export default function ValueNodeView({ data, selected }: NodeProps) {
     <div className={`vnode ${node.kind} ${selected ? "selected" : ""}`}>
       {node.parentId && <Handle type="target" position={Position.Top} />}
       <div className="label">
-        <span>{node.label}</span>
+        <span>
+          {d.operandIndex !== null && (
+            <span className="op-badge" title="Operand order (left → right)">#{d.operandIndex + 1}</span>
+          )}{" "}
+          {node.label}
+        </span>
         {!isInput && <span className="op-badge">{node.operator}</span>}
       </div>
 

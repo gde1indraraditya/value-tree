@@ -1,5 +1,22 @@
 import { EvalResult, Operator, ValueNode, ValueTree } from "./types";
 
+/**
+ * Re-derive a sibling group's `order` from their left-to-right canvas position.
+ * This is what makes "drag a node left" change its operand position for
+ * order-sensitive operators (SUBTRACT/DIVIDE). Pure: returns a new tree.
+ */
+export function reorderSiblingsByX(tree: ValueTree, parentId: string): ValueTree {
+  const siblings = Object.values(tree.nodes)
+    .filter((n) => n.parentId === parentId)
+    .sort((a, b) => a.position.x - b.position.x);
+  if (siblings.every((s, i) => s.order === i)) return tree; // already correct
+  const nodes = { ...tree.nodes };
+  siblings.forEach((s, i) => {
+    nodes[s.id] = { ...nodes[s.id], order: i };
+  });
+  return { ...tree, nodes };
+}
+
 /** Return the ordered children of a node. */
 export function childrenOf(tree: ValueTree, nodeId: string): ValueNode[] {
   return Object.values(tree.nodes)
