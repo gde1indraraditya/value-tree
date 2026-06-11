@@ -33,12 +33,28 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 Without it, a deterministic heuristic is used so the feature always works.
 
+## Tests
+
+Unit tests (Vitest) cover the core domain logic — the calculation engine,
+operand ordering, validation, AI-insight heuristics, and layout invariants.
+
+```bash
+npm test            # run once
+npm run test:watch  # watch mode
+npm run test:coverage
+npm run typecheck   # tsc --noEmit
+```
+
+CI (`.github/workflows/ci.yml`) runs the typecheck + tests on every pull
+request, so a change that breaks existing behaviour is caught before merge.
+
 ## Layout
 
 ```
 app/            Next.js routes (home, /editor/[id], /api/insight)
 components/      ValueTreeEditor, ValueNode, InsightPanel
-lib/            types, calc (engine), layout, insight, seed
+lib/            types, calc (engine), layout, insight, seed, db, repo
+tests/          Vitest unit tests + factory helpers
 db/schema.sql   PostgreSQL production schema
 ARCHITECTURE.md design & rationale
 ```
