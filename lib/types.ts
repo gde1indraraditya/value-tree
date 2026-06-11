@@ -8,6 +8,14 @@
 export type TreeType = "financial" | "qualitative";
 
 /**
+ * Layout direction of a tree.
+ *  - vertical:   root on top, children below, siblings spread left→right (operand order = X)
+ *  - horizontal: root on the RIGHT, children to the left (RL), siblings stacked
+ *                top→bottom (operand order = Y). Matches the classic EVA layout.
+ */
+export type TreeOrientation = "vertical" | "horizontal";
+
+/**
  * How a *calculated* node combines its (ordered) children.
  *  - SUM:      c0 + c1 + c2 ...
  *  - SUBTRACT: c0 - (c1 + c2 + ...)     (order matters)
@@ -53,6 +61,7 @@ export interface ValueTree {
   name: string;
   businessUnit: string;
   type: TreeType;
+  orientation: TreeOrientation;
   rootId: string;
   /** Flat map keyed by node id — O(1) access, mirrors a flat DB table. */
   nodes: Record<string, ValueNode>;

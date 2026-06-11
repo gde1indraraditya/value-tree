@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { childrenOf, contributionShares, evaluate, reorderSiblingsByX } from "@/lib/calc";
+import { childrenOf, contributionShares, evaluate, reorderSiblings } from "@/lib/calc";
 import { evaTree, strategicHealthTree } from "@/lib/seed";
 import { vnode, vtree } from "./factory";
 
@@ -101,8 +101,8 @@ describe("evaluate — edge cases & validation", () => {
   });
 });
 
-describe("reorderSiblingsByX (operand order from visual position)", () => {
-  it("reproduces and fixes the SUBTRACT bug", () => {
+describe("reorderSiblings (operand order from visual position)", () => {
+  it("x-axis (vertical): reproduces and fixes the SUBTRACT bug", () => {
     // Angka 2 created first (order 0, x 0); Angka 1 dragged left (order 1, x -240).
     const t = vtree("r", [
       vnode({ id: "r", kind: "calculated", operator: "SUBTRACT" }),
@@ -111,19 +111,38 @@ describe("reorderSiblingsByX (operand order from visual position)", () => {
     ]);
     expect(evaluate(t).values.r).toBe(-2); // before reorder
 
-    const fixed = reorderSiblingsByX(t, "r");
+    const fixed = reorderSiblings(t, "r", "x");
     expect(fixed.nodes.a1.order).toBe(0); // leftmost becomes operand #1
     expect(fixed.nodes.a2.order).toBe(1);
     expect(evaluate(fixed).values.r).toBe(2); // 10 - 8
   });
 
-  it("is a no-op when order already matches x", () => {
+  it("y-axis (horizontal): topmost operand becomes #1", () => {
+    // Same values, stacked vertically: a1 is higher (smaller y) => operand #1.
+    const t = vtree(
+      "r",
+      [
+        vnode({ id: "r", kind: "calculated", operator: "SUBTRACT" }),
+        vnode({ id: "a2", parentId: "r", order: 0, manualValue: 8, position: { x: 0, y: 0 } }),
+        vnode({ id: "a1", parentId: "r", order: 1, manualValue: 10, position: { x: 0, y: -120 } }),
+      ],
+      "financial",
+      "horizontal",
+    );
+    expect(evaluate(t).values.r).toBe(-2);
+    const fixed = reorderSiblings(t, "r", "y");
+    expect(fixed.nodes.a1.order).toBe(0); // topmost becomes operand #1
+    expect(fixed.nodes.a2.order).toBe(1);
+    expect(evaluate(fixed).values.r).toBe(2);
+  });
+
+  it("is a no-op when order already matches the axis", () => {
     const t = vtree("r", [
       vnode({ id: "r", kind: "calculated", operator: "SUBTRACT" }),
       vnode({ id: "a", parentId: "r", order: 0, manualValue: 10, position: { x: 0, y: 0 } }),
       vnode({ id: "b", parentId: "r", order: 1, manualValue: 8, position: { x: 200, y: 0 } }),
     ]);
-    expect(reorderSiblingsByX(t, "r")).toBe(t); // same reference = unchanged
+    expect(reorderSiblings(t, "r", "x")).toBe(t); // same reference = unchanged
   });
 });
 

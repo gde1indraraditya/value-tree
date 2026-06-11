@@ -1,5 +1,5 @@
 import { pool, query } from "./db";
-import { NodeKind, Operator, TreeType, ValueNode, ValueTree } from "./types";
+import { NodeKind, Operator, TreeOrientation, TreeType, ValueNode, ValueTree } from "./types";
 
 export interface TreeSummary {
   id: string;
@@ -75,8 +75,9 @@ export async function getTree(id: string): Promise<ValueTree | null> {
     name: string;
     business_unit: string;
     type: TreeType;
+    orientation: TreeOrientation;
     root_id: string | null;
-  }>(`SELECT id, name, business_unit, type, root_id FROM trees WHERE id = $1`, [id]);
+  }>(`SELECT id, name, business_unit, type, orientation, root_id FROM trees WHERE id = $1`, [id]);
   const t = treeRows[0];
   if (!t) return null;
 
@@ -100,6 +101,7 @@ export async function getTree(id: string): Promise<ValueTree | null> {
     name: t.name,
     businessUnit: t.business_unit,
     type: t.type,
+    orientation: t.orientation,
     rootId: t.root_id ?? "",
     nodes,
   };
@@ -114,8 +116,9 @@ export async function createTree(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // New trees default to the horizontal (RL) layout.
     const treeRes = await client.query<{ id: string }>(
-      `INSERT INTO trees (name, business_unit, type) VALUES ($1, $2, $3) RETURNING id`,
+      `INSERT INTO trees (name, business_unit, type, orientation) VALUES ($1, $2, $3, 'horizontal') RETURNING id`,
       [input.name, input.businessUnit, input.type],
     );
     const treeId = treeRes.rows[0].id;
@@ -173,8 +176,8 @@ export async function saveTree(tree: ValueTree): Promise<void> {
       );
     }
     await client.query(
-      `UPDATE trees SET root_id = $1, name = $2, business_unit = $3, type = $4, updated_at = now() WHERE id = $5`,
-      [tree.rootId || null, tree.name, tree.businessUnit, tree.type, tree.id],
+      `UPDATE trees SET root_id = $1, name = $2, business_unit = $3, type = $4, orientation = $5, updated_at = now() WHERE id = $6`,
+      [tree.rootId || null, tree.name, tree.businessUnit, tree.type, tree.orientation, tree.id],
     );
     await client.query("COMMIT");
   } catch (e) {

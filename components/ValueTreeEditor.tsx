@@ -15,7 +15,7 @@ import "@xyflow/react/dist/style.css";
 
 import ValueNodeView, { ValueNodeData } from "./ValueNode";
 import InsightPanel from "./InsightPanel";
-import { evaluate, reorderSiblingsByX } from "@/lib/calc";
+import { evaluate, reorderSiblings } from "@/lib/calc";
 import { autoLayout } from "@/lib/layout";
 import { Insight } from "@/lib/insight";
 import { NodeKind, Operator, ValueNode, ValueTree } from "@/lib/types";
@@ -148,6 +148,7 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
             node: nd,
             computed: ev.values[nd.id] ?? null,
             issues: ev.issues[nd.id] ?? [],
+            orientation: tree.orientation,
             operandIndex: orderSensitive ? nd.order : null,
             onValueChange,
             onAddChild,
@@ -190,7 +191,9 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
     setTree((t) => {
       const node = t.nodes[nodeId];
       if (!node || !node.parentId) return t; // root has no siblings to order
-      return reorderSiblingsByX(t, node.parentId);
+      // Vertical layout orders operands by X (left→right); horizontal by Y (top→bottom).
+      const axis = t.orientation === "horizontal" ? "y" : "x";
+      return reorderSiblings(t, node.parentId, axis);
     });
   }, []);
 
@@ -249,6 +252,16 @@ export default function ValueTreeEditor({ initialTree }: { initialTree: ValueTre
             {saveState === "error" && "⚠ Save failed"}
           </span>
           <div style={{ flex: 1 }} />
+          <button
+            title="Toggle layout orientation"
+            onClick={() =>
+              setTree((t) =>
+                autoLayout({ ...t, orientation: t.orientation === "horizontal" ? "vertical" : "horizontal" }),
+              )
+            }
+          >
+            {tree.orientation === "horizontal" ? "Layout: Horizontal ⇄" : "Layout: Vertical ⇅"}
+          </button>
           <button onClick={() => setTree((t) => autoLayout(t))}>Auto layout</button>
           <button className="primary" onClick={generateInsight} disabled={loading}>
             {loading ? "Analysing…" : "Generate AI Insight"}

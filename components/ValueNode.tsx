@@ -1,12 +1,14 @@
 "use client";
 
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { ValueNode as VNode } from "@/lib/types";
+import { TreeOrientation, ValueNode as VNode } from "@/lib/types";
 
 export interface ValueNodeData {
   node: VNode;
   computed: number | null;
   issues: string[];
+  /** Layout orientation — drives handle sides and operand-order direction text. */
+  orientation: TreeOrientation;
   /** Operand position (0-based) when the PARENT is order-sensitive (SUBTRACT/DIVIDE); else null. */
   operandIndex: number | null;
   onValueChange: (id: string, value: number | null) => void;
@@ -30,6 +32,13 @@ export default function ValueNodeView({ data, selected }: NodeProps) {
   const isInput = node.kind === "input";
   const displayValue = isInput ? node.manualValue : computed;
 
+  // Horizontal (RL): parent is to the right, so edges enter from the right and
+  // leave to the left. Vertical (TB): top/bottom. Operand order text follows suit.
+  const horizontal = d.orientation === "horizontal";
+  const targetPos = horizontal ? Position.Right : Position.Top;
+  const sourcePos = horizontal ? Position.Left : Position.Bottom;
+  const operandTitle = horizontal ? "Operand order (top → bottom)" : "Operand order (left → right)";
+
   // Colour the value if it breaches its target.
   let tone = "";
   if (node.target !== null && displayValue !== null && node.target !== 0) {
@@ -40,11 +49,11 @@ export default function ValueNodeView({ data, selected }: NodeProps) {
 
   return (
     <div className={`vnode ${node.kind} ${selected ? "selected" : ""}`}>
-      {node.parentId && <Handle type="target" position={Position.Top} />}
+      {node.parentId && <Handle type="target" position={targetPos} />}
       <div className="label">
         <span>
           {d.operandIndex !== null && (
-            <span className="op-badge" title="Operand order (left → right)">#{d.operandIndex + 1}</span>
+            <span className="op-badge" title={operandTitle}>#{d.operandIndex + 1}</span>
           )}{" "}
           {node.label}
         </span>
@@ -80,7 +89,7 @@ export default function ValueNodeView({ data, selected }: NodeProps) {
         )}
       </div>
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={sourcePos} />
     </div>
   );
 }
