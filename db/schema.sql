@@ -25,6 +25,9 @@ CREATE TABLE trees (
     name          TEXT        NOT NULL,
     business_unit TEXT        NOT NULL,
     type          tree_type   NOT NULL,
+    -- Layout: existing trees are 'vertical'; the app creates new ones 'horizontal'.
+    orientation   TEXT        NOT NULL DEFAULT 'vertical'
+                  CHECK (orientation IN ('vertical', 'horizontal')),
     root_id       UUID,                       -- FK added after nodes exists
     owner_id      UUID,                       -- who owns this tree
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),

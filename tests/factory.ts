@@ -1,4 +1,4 @@
-import { TreeType, ValueNode, ValueTree } from "@/lib/types";
+import { TreeOrientation, TreeType, ValueNode, ValueTree } from "@/lib/types";
 
 /** Build a ValueNode with sensible defaults; override only what the test needs. */
 export function vnode(partial: Partial<ValueNode> & { id: string }): ValueNode {
@@ -18,8 +18,13 @@ export function vnode(partial: Partial<ValueNode> & { id: string }): ValueNode {
 }
 
 /** Assemble a ValueTree from a flat list of nodes. */
-export function vtree(rootId: string, nodes: ValueNode[], type: TreeType = "financial"): ValueTree {
+export function vtree(
+  rootId: string,
+  nodes: ValueNode[],
+  type: TreeType = "financial",
+  orientation: TreeOrientation = "vertical",
+): ValueTree {
   const map: Record<string, ValueNode> = {};
   for (const n of nodes) map[n.id] = n;
-  return { id: "t", name: "test", businessUnit: "QA", type, rootId, nodes: map };
+  return { id: "t", name: "test", businessUnit: "QA", type, orientation, rootId, nodes: map };
 }
